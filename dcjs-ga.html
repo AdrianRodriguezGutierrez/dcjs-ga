@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Powerfull dc.js javascript library for analysing google analytics data</title>
+<meta charset="UTF-8">
+	
+<link rel="stylesheet" type="text/css" href="https://dc-js.github.io/dc.js/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="https://dc-js.github.io/dc.js/css/dc.css"/>
+
+
+<style>
+div.dc-chart {
+	float: left;
+	margin: 30px;
+}
+</style>
+
+</head>
+<body>
+
+
+
+<div class='container'>
+<h1>Analyzing Google Analytics data with dc.js (vs other tools)</h1>
+<p>
+    The following charts provide an example of dc.js used against Google Analytics Report API data. 
+	I used the data collected by Google Analytics on www.precioscarburantes.com (hosting inactive)
+	from 2017/12/25 to 2019/11/15. 
+	Although it is just an example, using it you can already ask some interesting
+    questions. How many sessions comes from different devices in a specific period? 
+	What are the main sources that new visitors come from? 
+</p>
+	<div class='row'>
+		<div id='sessions'>
+		<strong>Sessions by date</strong>
+        <a class="reset" href="javascript:historicalchart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+		<div class="clearfix"></div>
+
+		</div>
+	</div>
+
+	<div class='row'>
+		<div id='device'>
+			<strong>Device</strong>
+			<a class="reset" href="javascript:devicechart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+			<div class="clearfix"></div>
+		</div>
+		<div id='usertype'>
+			<strong>UserType</strong>
+			<a class="reset" href="javascript:usertypechart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+			<div class="clearfix"></div>
+		</div>
+		<div id='source'>
+			<strong>Source</strong>
+			<a class="reset" href="javascript:sourcechart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+			<div class="clearfix"></div>
+		</div>
+	</div>
+
+</div>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.js"></script>
+<!--<script type="text/javascript" src="https://dc-js.github.io/dc.js/js/d3.js"></script>-->
+<script type="text/javascript" src="https://dc-js.github.io/dc.js/js/crossfilter.js"></script>
+<script type="text/javascript" src="https://dc-js.github.io/dc.js/js/dc.js"></script>
+<script type="text/javascript" >
+
+//d3.csv('data.csv').then(function(data) {
+d3.csv('data.csv',function(data){
+	 dateFormatSpecifier = '%Y%m%d';
+     dateFormat = d3.timeFormat(dateFormatSpecifier);
+     dateFormatParser = d3.timeParse(dateFormatSpecifier);
+     numberFormat = d3.format('.2f');
+
+    data.forEach(d => {
+        d.dd = dateFormatParser(d.Date);
+        d.sessions = +d.Sessions; // coerce to number
+    });
+
+	//console.log(data);
+
+	ndx = crossfilter(data);
+    all = ndx.groupAll();
+	
+	date = ndx.dimension(function(d){ return d.dd});
+	sessionesdate = date.group().reduceSum(function(d) {return +d.sessions;})
+	
+	
+	 var historicalchart = dc.lineChart("#sessions")
+        .dimension(date)
+        .group(sessionesdate) 
+		.width(800)
+		.height(200)
+		//.round(d3.time.day.round)
+		.x(d3.scaleTime()
+        .domain([new Date(2017, 12, 25), new Date(2019, 11, 15)]))
+		.elasticY(true);
+	
+	
+	device = ndx.dimension(function(d){return d.DeviceCategory;});
+	sessionesdevice = device.group().reduceSum(function(d) {return +d.sessions;})
+	
+	var devicechart = dc.pieChart("#device")
+          .dimension(device)
+          .group(sessionesdevice)
+          .width(200)
+          .height(200)
+		  .renderLabel(true);
+		  
+	usertype = ndx.dimension(function(d){return d.UserType;});
+	sessionesusertype = usertype.group().reduceSum(function(d) {return +d.sessions;})
+	
+	var usertypechart = dc.pieChart("#usertype")
+          .dimension(usertype)
+          .group(sessionesusertype)
+          .width(200)
+          .height(200)
+		  .renderLabel(true);	  
+	
+	source = ndx.dimension(function(d){return d.Source;});
+	sessionessource = source.group().reduceSum(function(d) {return +d.sessions;})
+	
+	var sourcechart = dc.pieChart("#source")
+          .dimension(source)
+          .group(sessionessource)
+          .width(200)
+          .height(200)
+		  .renderLabel(true);
+	
+	dc.renderAll();
+	
+	
+//	return {historical:historical, device:device,usertype:usertype,source:source};
+});
+
+</script>
+</body>
+</html>
